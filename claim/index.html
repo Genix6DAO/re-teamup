@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RE Teamup - Contractor Network</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 500px;
+            width: 100%;
+            padding: 40px;
+        }
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo h1 {
+            color: #667eea;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .logo p {
+            color: #666;
+            margin-top: 8px;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #e0e0e0;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .business-profile {
+            display: none;
+        }
+        .profile-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            margin: -40px -40px 30px -40px;
+            border-radius: 16px 16px 0 0;
+        }
+        .profile-header h2 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        .profile-header .meta {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        .profile-details {
+            margin-bottom: 30px;
+        }
+        .detail-row {
+            display: flex;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .detail-row:last-child { border-bottom: none; }
+        .detail-label {
+            width: 100px;
+            color: #666;
+            font-size: 14px;
+        }
+        .detail-value {
+            flex: 1;
+            color: #333;
+            font-weight: 500;
+        }
+        .claim-form h3 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.2s;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .success {
+            background: #efe;
+            color: #3c3;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .claimed-badge {
+            display: none;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .claimed-badge h3 {
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <h1>🏠 RE Teamup</h1>
+            <p>Verified contractor network for real estate investors</p>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Loading business profile...</p>
+        </div>
+
+        <div class="error" id="error"></div>
+        <div class="success" id="success"></div>
+
+        <div class="business-profile" id="profile">
+            <div class="profile-header">
+                <h2 id="businessName">Business Name</h2>
+                <div class="meta" id="businessMeta">Category • City, State</div>
+            </div>
+
+            <div class="profile-details">
+                <div class="detail-row">
+                    <div class="detail-label">Service</div>
+                    <div class="detail-value" id="category">-</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Location</div>
+                    <div class="detail-value" id="location">-</div>
+                </div>
+                <div class="detail-row" id="websiteRow" style="display:none">
+                    <div class="detail-label">Website</div>
+                    <div class="detail-value"><a id="website" href="#" target="_blank">-</a></div>
+                </div>
+                <div class="detail-row" id="addressRow" style="display:none">
+                    <div class="detail-label">Address</div>
+                    <div class="detail-value" id="address">-</div>
+                </div>
+            </div>
+
+            <div class="claimed-badge" id="claimedBadge">
+                <h3>✓ Profile Claimed</h3>
+                <p>This business has already been verified and claimed.</p>
+            </div>
+
+            <form class="claim-form" id="claimForm">
+                <h3>Claim Your Profile</h3>
+                <p style="color: #666; margin-bottom: 20px; font-size: 14px;">Verify your information below to claim this profile and join our investor network.</p>
+                
+                <div class="form-group">
+                    <label for="firstName">First Name</label>
+                    <input type="text" id="firstName" required placeholder="Your first name">
+                </div>
+                
+                <div class="form-group">
+                    <label for="lastName">Last Name</label>
+                    <input type="text" id="lastName" required placeholder="Your last name">
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" required placeholder="you@company.com">
+                </div>
+                
+                <div class="form-group">
+                    <label for="phone">Phone Number</label>
+                    <input type="tel" id="phone" required placeholder="(555) 123-4567">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Create Password</label>
+                    <input type="password" id="password" required placeholder="Min 8 characters" minlength="8">
+                </div>
+
+                <button type="submit" class="btn" id="submitBtn">Claim Profile</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Supabase configuration
+        const SUPABASE_URL = 'https://iyyezyjcnmfnccyfdfwz.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5eWV6eWpjbm1mbmNjeWZkZnd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI2MTQyNjEsImV4cCI6MjA1ODE5MDI2MX0.0Qa-2OD1Llb40W6kAFTn-1zEeIOeOdVu_7QK_EyD0h0';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        // Get business slug from URL
+        const pathParts = window.location.pathname.split('/');
+        const businessSlug = pathParts[pathParts.length - 1] || pathParts[pathParts.length - 2];
+        
+        let currentContact = null;
+
+        // Load business profile
+        async function loadProfile() {
+            try {
+                const { data, error } = await supabase
+                    .from('contacts')
+                    .select('*')
+                    .eq('business_slug', businessSlug)
+                    .single();
+
+                if (error) throw error;
+                if (!data) throw new Error('Business not found');
+
+                currentContact = data;
+                displayProfile(data);
+            } catch (err) {
+                showError('Could not find this business profile. Please check the link and try again.');
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        // Display profile data
+        function displayProfile(contact) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('profile').style.display = 'block';
+
+            document.getElementById('businessName').textContent = contact.company_name || 'Business Name';
+            document.getElementById('businessMeta').textContent = 
+                `${contact.custom_fields?.category || 'Service Provider'} • ${contact.custom_fields?.city || 'Unknown'}, ${contact.custom_fields?.state || ''}`;
+            
+            document.getElementById('category').textContent = contact.custom_fields?.category || '-';
+            document.getElementById('location').textContent = 
+                `${contact.custom_fields?.city || ''}, ${contact.custom_fields?.state || ''}`;
+
+            if (contact.custom_fields?.website) {
+                document.getElementById('websiteRow').style.display = 'flex';
+                document.getElementById('website').href = contact.custom_fields.website;
+                document.getElementById('website').textContent = contact.custom_fields.website;
+            }
+
+            if (contact.custom_fields?.address) {
+                document.getElementById('addressRow').style.display = 'flex';
+                document.getElementById('address').textContent = contact.custom_fields.address;
+            }
+
+            // Check if already claimed
+            if (contact.stage === 'claimed' || contact.claimed_at) {
+                document.getElementById('claimForm').style.display = 'none';
+                document.getElementById('claimedBadge').style.display = 'block';
+            }
+
+            // Pre-fill name if available
+            if (contact.first_name) {
+                document.getElementById('firstName').value = contact.first_name;
+            }
+            if (contact.last_name) {
+                document.getElementById('lastName').value = contact.last_name;
+            }
+            if (contact.phone) {
+                document.getElementById('phone').value = formatPhone(contact.phone);
+            }
+        }
+
+        // Format phone number
+        function formatPhone(phone) {
+            const cleaned = phone.replace(/\D/g, '');
+            if (cleaned.length === 10) {
+                return `(${cleaned.slice(0,3)}) ${cleaned.slice(3,6)}-${cleaned.slice(6)}`;
+            }
+            return phone;
+        }
+
+        // Show error
+        function showError(message) {
+            const errorEl = document.getElementById('error');
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+        }
+
+        // Show success
+        function showSuccess(message) {
+            const successEl = document.getElementById('success');
+            successEl.textContent = message;
+            successEl.style.display = 'block';
+        }
+
+        // Handle form submission
+        document.getElementById('claimForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Processing...';
+
+            const claimData = {
+                first_name: document.getElementById('firstName').value,
+                last_name: document.getElementById('lastName').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                password_hash: 'pending_auth_setup', // Will be handled by auth
+                claimed_at: new Date().toISOString()
+            };
+
+            try {
+                const { error } = await supabase
+                    .from('contacts')
+                    .update({
+                        stage: 'claimed',
+                        claimed_by: claimData,
+                        claimed_at: new Date().toISOString(),
+                        first_name: claimData.first_name,
+                        last_name: claimData.last_name,
+                        email: claimData.email
+                    })
+                    .eq('phone', currentContact.phone);
+
+                if (error) throw error;
+
+                showSuccess('Profile claimed successfully! Welcome to RE Teamup.');
+                document.getElementById('claimForm').style.display = 'none';
+                document.getElementById('claimedBadge').style.display = 'block';
+
+            } catch (err) {
+                showError('Error claiming profile. Please try again or contact support.');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Claim Profile';
+            }
+        });
+
+        // Load profile on page load
+        loadProfile();
+    </script>
+</body>
+</html>

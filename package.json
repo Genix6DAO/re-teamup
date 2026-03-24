@@ -1,0 +1,9 @@
+{
+  "name": "re-teamup",
+  "version": "1.0.0",
+  "description": "RE Teamup - Verified contractor network for real estate investors",
+  "scripts": {
+    "dev": "npx serve .",
+    "deploy": "echo 'Deploy to GitHub Pages: push to gh-pages branch'"
+  }
+}
